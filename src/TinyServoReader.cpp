@@ -27,11 +27,24 @@ void PinChangeInterrupt()
 
 TinyServoReader::TinyServoReader(const uint8_t pin)
 {
-	attachInterrupt(digitalPinToInterrupt(pin), PinChangeInterrupt, CHANGE);  // attach interrupt handler
+	PinNumber = pin;
 
-	//Same thing, CPU likes the second one better.
+	//Same result.
 	//PinIndex = pow(2, INPUT_PWM_PIN);
 	PinIndex = 1 << pin;
+}
+
+void TinyServoReader::Begin()
+{
+	// Attach interrupt handler and start measuring.
+	attachInterrupt(digitalPinToInterrupt(PinNumber), PinChangeInterrupt, CHANGE);
+}
+
+void TinyServoReader::Begin(const uint8_t pin)
+{
+	PinNumber = pin;
+	PinIndex = 1 << pin;
+	Begin();
 }
 
 bool TinyServoReader::HasPulseDuration()

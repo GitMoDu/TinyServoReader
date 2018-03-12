@@ -16,7 +16,6 @@
 #pragma Only ATmega328 and ATTiny 85 supported.
 #endif
 
-
 #define INPUT_SIGNAL_TIMEOUT_DURATION_MICROS 100000l
 
 #define SERVO_READER_PULSE_MIN_DURATION_MICROS 1000l
@@ -26,14 +25,17 @@
 
 class TinyServoReader
 {
+private:
+	uint8_t PinNumber = 0;
 public:
 	TinyServoReader(const uint8_t pin);
 	void Invalidate();
 	bool HasPeriod();
 	bool HasPulseDuration();
+	void Begin(const uint8_t pin);
+	void Begin();
 	uint32_t GetPulseDuration();
 	uint16_t GetValue();
-
 };
 #endif
 

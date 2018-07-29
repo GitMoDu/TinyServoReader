@@ -36,11 +36,18 @@ TinyServoReader::TinyServoReader(const uint8_t pin)
 
 void TinyServoReader::Begin()
 {
-	LastHigh = 0;
-	Invalidate();
+	Stop();
 
 	// Attach interrupt handler and start measuring.
 	attachInterrupt(digitalPinToInterrupt(PinNumber), PinChangeInterrupt, CHANGE);
+}
+
+void TinyServoReader::Stop()
+{
+	detachInterrupt(digitalPinToInterrupt(PinNumber));      // stop LOW interrupt on D2
+
+	LastHigh = 0;
+	Invalidate();
 }
 
 void TinyServoReader::Begin(const uint8_t pin)

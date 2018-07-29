@@ -34,6 +34,7 @@ public:
 	bool HasPulseDuration();
 	void Begin(const uint8_t pin);
 	void Begin();
+	void Stop();
 	uint32_t GetPulseDuration();
 	uint16_t GetValue();
 };

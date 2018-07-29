@@ -36,6 +36,9 @@ TinyServoReader::TinyServoReader(const uint8_t pin)
 
 void TinyServoReader::Begin()
 {
+	LastHigh = 0;
+	Invalidate();
+
 	// Attach interrupt handler and start measuring.
 	attachInterrupt(digitalPinToInterrupt(PinNumber), PinChangeInterrupt, CHANGE);
 }
@@ -44,12 +47,14 @@ void TinyServoReader::Begin(const uint8_t pin)
 {
 	PinNumber = pin;
 	PinIndex = 1 << pin;
+
 	Begin();
 }
 
 bool TinyServoReader::HasPulseDuration()
 {
-	return LastPulseDuration != 0;
+	return LastHigh != 0 && 
+		((micros() - LastHigh) < INPUT_SIGNAL_TIMEOUT_DURATION_MICROS);
 }
 
 bool TinyServoReader::HasPeriod()
@@ -69,8 +74,7 @@ uint32_t TinyServoReader::GetPulseDuration()
 
 void TinyServoReader::Invalidate()
 {
-	if (LastHigh == 0 ||
-		((micros() - LastHigh) > INPUT_SIGNAL_TIMEOUT_DURATION_MICROS))
+	if (LastHigh == 0 || !HasPulseDuration())
 	{
 		LastHigh = 0;
 		LastPeriod = 0;

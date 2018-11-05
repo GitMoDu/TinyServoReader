@@ -71,7 +71,7 @@ bool TinyServoReader::HasPeriod()
 
 uint16_t TinyServoReader::GetValue()
 {
-	return uint16_t((LastPulseDuration*UINT16_MAXVALUE) / SERVO_READER_PULSE_MAX_DURATION_MICROS);
+	return uint16_t((LastPulseDuration*UINT16_MAX) / SERVO_READER_PULSE_MAX_DURATION_MICROS);
 }
 
 uint32_t TinyServoReader::GetPulseDuration()

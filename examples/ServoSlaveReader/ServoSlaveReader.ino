@@ -2,8 +2,6 @@
 
 #ifdef ATTINY_CORE
 #define INPUT_PWM_PIN PB2
-#define OUTPUT_A1_PIN PB0
-#define OUTPUT_A2_PIN PB1
 #else
 #pragma Only ATTiny 85 supported.
 #endif

@@ -1,26 +1,28 @@
 #include "TinyServoReader.h"
 
-volatile uint32_t LastHigh, LastPulseDuration, LastPeriod, TimeStampGrunt;
+volatile uint32_t LastHigh, LastPulseDuration, LastPeriod;
 
 uint8_t PinIndex = 0;
 
 void PinChangeInterrupt()
 {
-	TimeStampGrunt = micros();
+	uint32_t TimeStamp = micros();
+
 	if (PINB & PinIndex)
 	{
 		if (LastHigh != 0)
 		{
-			LastPeriod = TimeStampGrunt - LastHigh;
+			LastPeriod = TimeStamp - LastHigh;
 		}
-		LastHigh = TimeStampGrunt;
+		LastHigh = TimeStamp;
 	}
 	else
 	{
 		if (LastHigh != 0)
 		{
-			//We clamp the value so we never have to deal with off-spec values for servos.
-			LastPulseDuration = constrain(TimeStampGrunt - LastHigh, SERVO_READER_PULSE_MIN_DURATION_MICROS, SERVO_READER_PULSE_MAX_DURATION_MICROS);
+			TimeStamp = TimeStamp - LastHigh;
+			// Clamp the value to servo specification.
+			LastPulseDuration = constrain(TimeStamp, SERVO_READER_PULSE_MIN_DURATION_MICROS, SERVO_READER_PULSE_MAX_DURATION_MICROS);
 		}
 	}
 }
@@ -29,8 +31,6 @@ TinyServoReader::TinyServoReader(const uint8_t pin)
 {
 	PinNumber = pin;
 
-	//Same result.
-	//PinIndex = pow(2, INPUT_PWM_PIN);
 	PinIndex = 1 << pin;
 }
 
@@ -44,7 +44,7 @@ void TinyServoReader::Begin()
 
 void TinyServoReader::Stop()
 {
-	detachInterrupt(digitalPinToInterrupt(PinNumber));      // stop LOW interrupt on D2
+	detachInterrupt(digitalPinToInterrupt(PinNumber));
 
 	LastHigh = 0;
 	Invalidate();
@@ -76,12 +76,12 @@ uint16_t TinyServoReader::GetValue()
 
 uint32_t TinyServoReader::GetPulseDuration()
 {
-	LastPulseDuration;
+	return LastPulseDuration;
 }
 
 void TinyServoReader::Invalidate()
 {
-	if (LastHigh == 0 || !HasPulseDuration())
+	if (!HasPulseDuration())
 	{
 		LastHigh = 0;
 		LastPeriod = 0;

@@ -1,90 +1,64 @@
 #include "TinyServoReader.h"
 
-volatile uint32_t LastHigh, LastPulseDuration, LastPeriod;
 
 uint8_t PinIndex = 0;
+TinyServoReader::CaptureStruct Capture;
 
-void PinChangeInterrupt()
+// Interrupt latency ~[8 ; 18] us.
+// Interrupt function duration ~[4.5 ; 5.0] us.
+// We use a 2 field time getter to avoid doing multiplications during the interrupt.
+void TinyServoReaderPinChangeInterrupt()
 {
-	uint32_t TimeStamp = micros();
-
 	if (PINB & PinIndex)
 	{
-		if (LastHigh != 0)
-		{
-			LastPeriod = TimeStamp - LastHigh;
-		}
-		LastHigh = TimeStamp;
+		Capture.StartMicros = micros();
+		Capture.CaptureState = TinyServoReader::CaptureStateEnum::WaitingForEnd;
 	}
 	else
 	{
-		if (LastHigh != 0)
-		{
-			TimeStamp = TimeStamp - LastHigh;
-			// Clamp the value to servo specification.
-			LastPulseDuration = constrain(TimeStamp, SERVO_READER_PULSE_MIN_DURATION_MICROS, SERVO_READER_PULSE_MAX_DURATION_MICROS);
-		}
+		Capture.EndMicros = micros();
+		Capture.CaptureState = TinyServoReader::CaptureStateEnum::WaitingForStart;
 	}
 }
 
-TinyServoReader::TinyServoReader(const uint8_t pin)
+TinyServoReader::TinyServoReader(const uint8_t pin) : PinNumber(pin)
 {
-	PinNumber = pin;
-
 	PinIndex = 1 << pin;
 }
 
-void TinyServoReader::Begin()
+void TinyServoReader::Start()
 {
+	// Reset everything.
 	Stop();
 
+	// Set up pin.
+	pinMode(PinNumber, INPUT);
+
 	// Attach interrupt handler and start measuring.
-	attachInterrupt(digitalPinToInterrupt(PinNumber), PinChangeInterrupt, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(PinNumber), TinyServoReaderPinChangeInterrupt, CHANGE);
 }
 
 void TinyServoReader::Stop()
 {
 	detachInterrupt(digitalPinToInterrupt(PinNumber));
-
-	LastHigh = 0;
-	Invalidate();
+	Capture.CaptureState = TinyServoReader::CaptureStateEnum::WaitingForEnd;
+	Capture.EndMicros = 0;
 }
 
-void TinyServoReader::Begin(const uint8_t pin)
+const bool TinyServoReader::GetServoPulseValue(uint16_t& value, const uint32_t timeoutDurationMillis)
 {
-	PinNumber = pin;
-	PinIndex = 1 << pin;
-
-	Begin();
-}
-
-bool TinyServoReader::HasPulseDuration()
-{
-	return LastHigh != 0 && 
-		((micros() - LastHigh) < INPUT_SIGNAL_TIMEOUT_DURATION_MICROS);
-}
-
-bool TinyServoReader::HasPeriod()
-{
-	return LastPeriod != 0;
-}
-
-uint16_t TinyServoReader::GetValue()
-{
-	return uint16_t((LastPulseDuration*UINT16_MAX) / SERVO_READER_PULSE_MAX_DURATION_MICROS);
-}
-
-uint32_t TinyServoReader::GetPulseDuration()
-{
-	return LastPulseDuration;
-}
-
-void TinyServoReader::Invalidate()
-{
-	if (!HasPulseDuration())
+	if (Capture.CaptureState == TinyServoReader::CaptureStateEnum::WaitingForStart)
 	{
-		LastHigh = 0;
-		LastPeriod = 0;
-		LastPulseDuration = 0;
+		// Copy a timings buffer of the last capture.
+		noInterrupts();
+		CaptureBuffer.StartMicros = Capture.StartMicros;
+		CaptureBuffer.EndMicros = Capture.EndMicros;
+		interrupts();
+
+		return CaptureBuffer.GetRelativeDelta(value, timeoutDurationMillis);
+	}
+	else
+	{
+		return false;
 	}
 }

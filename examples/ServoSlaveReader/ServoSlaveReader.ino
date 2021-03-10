@@ -6,29 +6,24 @@
 #pragma Only ATTiny 85 supported.
 #endif
 
-#define OUTPUT_UPDATE_PERIOD_MILLIS 200
+#define OUTPUT_UPDATE_PERIOD_MILLIS 50
 
 TinyServoReader ServoReader(INPUT_PWM_PIN);
 
-uint32_t LastUpdated = 0;
 
 void setup()
 {
 	Serial.begin(57600);
 
-	ServoReader.Begin();
+	ServoReader.Start();
 }
 
 void loop()
 {
-	if (millis() - LastUpdated > OUTPUT_UPDATE_PERIOD_MILLIS)
+	uint16_t PulseValue;
+	if (ServoReader.GetServoPulseValue(PulseValue, OUTPUT_UPDATE_PERIOD_MILLIS))
 	{
-		LastUpdated = millis();
-		ServoReader.Invalidate();
-		if (ServoReader.HasPulseDuration())
-		{
-			Serial.print(F("Input Value: "));
-			Serial.println(ServoReader.GetValue());
-		}
+		Serial.print(F("Input Value: "));
+		Serial.println(PulseValue);
 	}
 }

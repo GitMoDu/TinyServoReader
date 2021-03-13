@@ -13,7 +13,7 @@ TinyServoReader ServoReader(INPUT_PWM_PIN);
 
 void setup()
 {
-	Serial.begin(57600);
+	pinMode(PB1, OUTPUT);
 
 	ServoReader.Start();
 }
@@ -23,7 +23,6 @@ void loop()
 	uint16_t PulseValue;
 	if (ServoReader.GetServoPulseValue(PulseValue, OUTPUT_UPDATE_PERIOD_MILLIS))
 	{
-		Serial.print(F("Input Value: "));
-		Serial.println(PulseValue);
+		analogWrite(PB1, map(PulseValue, 0, UINT16_MAX, 0, UINT8_MAX));
 	}
 }

@@ -17,11 +17,13 @@
 #pragma Only ATmega328 and ATTiny 85 supported.
 #endif
 
+#ifndef DISABLEMILLIS
+
 
 class TinyServoReader
 {
 public:
-	static const uint8_t CPUDivider = F_CPU / 8000000; // micros is halved when running at 8 MHz.
+	static const uint8_t CPUDivider = 16000000L / F_CPU; // micros is halved when running at 8 MHz.
 	static const uint16_t MinServoMicros = 1000 / CPUDivider;
 	static const uint16_t MaxServoMicros = 2000 / CPUDivider;
 	static const uint16_t RangeServoMicros = MaxServoMicros - MinServoMicros;
@@ -32,14 +34,16 @@ public:
 	{
 		WaitingForStart,
 		WaitingForEnd,
+		WaitingForRestart,
 	};
 
-	struct CaptureBufferStruct
+	struct CaptureStruct
 	{
+		volatile CaptureStateEnum CaptureState = CaptureStateEnum::WaitingForStart;
 		volatile uint32_t StartMicros = 0;
 		volatile uint32_t EndMicros = 0;
 
-		const bool GetRelativeDelta(uint16_t& delta, const uint32_t timeoutDurationMillis)
+		const bool GetRelativeDelta(uint16_t& delta)
 		{
 			if (StartMicros < EndMicros)
 			{
@@ -51,8 +55,7 @@ public:
 			}
 
 			if ((delta < AbsoluteMinServoMicros) ||
-				(delta > AbsoluteMaxServoMicros)
-				|| (micros() - EndMicros > (timeoutDurationMillis * 1000L)))
+				(delta > AbsoluteMaxServoMicros))
 			{
 				delta = 0;
 				return false;
@@ -68,22 +71,14 @@ public:
 		}
 	};
 
-	struct CaptureStruct : CaptureBufferStruct
-	{
-		volatile CaptureStateEnum CaptureState = CaptureStateEnum::WaitingForStart;
-	};
-
 
 	const uint8_t PinNumber;
-	CaptureBufferStruct CaptureBuffer;
-
-	uint16_t LastValue = 0;
 
 public:
 	TinyServoReader(const uint8_t pin);
 	void Start();
 	void Stop();
-	const bool GetServoPulseValue(uint16_t& value, const uint32_t timeoutDurationMillis);
+	const bool GetServoPulseValue(uint16_t& value);
 };
 #endif
-
+#endif

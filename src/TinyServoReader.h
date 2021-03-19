@@ -23,9 +23,8 @@
 class TinyServoReader
 {
 public:
-	static const uint8_t CPUDivider = 16000000L / F_CPU; // micros is halved when running at 8 MHz.
-	static const uint16_t MinServoMicros = 1000 / CPUDivider;
-	static const uint16_t MaxServoMicros = 2000 / CPUDivider;
+	static const uint16_t MinServoMicros = 1000;
+	static const uint16_t MaxServoMicros = 2000;
 	static const uint16_t RangeServoMicros = MaxServoMicros - MinServoMicros;
 	static const uint16_t AbsoluteMinServoMicros = MinServoMicros - 200;
 	static const uint16_t AbsoluteMaxServoMicros = MaxServoMicros + 200;
